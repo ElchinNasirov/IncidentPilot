@@ -32,11 +32,9 @@ def load_and_parse_runbooks(runbooks_dir: str = "data/runbooks") -> list[Documen
             if line.startswith("**Target Service:**"):
                 # Split at the colon, grab the right side, and strip extra spaces
                 target_service = line.split(":**")[1].strip()
-                print(" --------" +line)
 
             elif line.startswith("**Severity:**"):
-                severity = line.split(":**")[1].strip()
-                print(" --------" +line)
+                severity= line.split(":**")[1].strip()
 
         # Wrap the raw text and extracted metadata into a formal LangChain Document object
         doc = Document(
