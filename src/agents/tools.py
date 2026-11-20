@@ -39,6 +39,7 @@ def search_engineering_runbooks(error_query: str, service_name: str = "") -> str
     source_file = top_doc.metadata.get("source", "Unknown")
     severity = top_doc.metadata.get("severity", "Unknown")
 
+    # return the runbook found in the database
     return f"Found Runbook: {source_file} (Severity: {severity})\n\n{top_doc.page_content}"
 
 
@@ -52,24 +53,28 @@ def query_past_incidents(service_name: str) -> str:
     """
     print(f"\n[TOOL CALLED: query_past_incidents] Checking history for service='{service_name}'")
 
+    # connect to the database
     conn = sqlite3.connect("data/incident_history.db")
-    cursor = conn.cursor()
+    cursor = conn.cursor() # create a cursor object to execute the query
 
     cursor.execute(
+        # select the incident_id, date_occurred, root_cause, resolution_time_mins from the past_incidents table where the affected_service is the same as the service_name
         "SELECT incident_id, date_occurred, root_cause, resolution_time_mins FROM past_incidents WHERE affected_service = ?",
         (service_name,)
     )
-    rows = cursor.fetchall()
-    conn.close()
+    rows = cursor.fetchall() # fetch all the rows from the query
+    conn.close() # close the connection to the database
 
+    # if the database returned nothing, inform the agent clearly 
     if not rows:
         return f"No past incidents found in the database for service '{service_name}'."
 
-    # Unpack each tuple index cleanly: row[0]=ID, row[1]=Date, row[2]=Cause, row[3]=Minutes
+    # unpack each tuple index cleanly: row[0]=ID, row[1]=Date, row[2]=Cause, row[3]=Minutes
     formatted_history = [
         f"- [{row[0]}] Date: {row[1]} | Root Cause: {row[2]} | Resolved in {row[3]} mins"
         for row in rows
     ]
+    # return the formatted history
     return f"Historical Outages for {service_name}:\n" + "\n".join(formatted_history)
 
 
@@ -83,19 +88,23 @@ def analyze_server_logs(service_name: str = "") -> str:
     """
     print(f"\n[TOOL CALLED: analyze_server_logs] Scanning logs for service='{service_name or 'ALL'}'")
 
+    # read the server logs from the CSV file
     df = pd.read_csv("data/logs/server_logs.csv")
 
     if service_name:
+        # filter the logs for the specific service name
         df = df[df["service_name"] == service_name]
 
     if df.empty:
+        # if the logs are empty, inform the agent clearly
         return f"No log records found for service '{service_name}'."
 
-    errors_df = df[df["status_code"] >= 400]
-    avg_latency = round(df["latency_ms"].mean(), 2)
-    max_latency = df["latency_ms"].max()
-    top_errors = errors_df["error_message"].value_counts().to_dict()
+    errors_df = df[df["status_code"] >= 400] # filter the logs for the specific service name
+    avg_latency = round(df["latency_ms"].mean(), 2) # calculate the average latency in milliseconds (the average request time)
+    max_latency = df["latency_ms"].max() # calculate the maximum latency in milliseconds (the longest request)
+    top_errors = errors_df["error_message"].value_counts().to_dict() # count the number of errors
 
+    # return the log summary
     return (
         f"Log Summary ({service_name or 'All Services'}):\n"
         f"- Total Requests Analyzed: {len(df)}\n"
@@ -105,7 +114,7 @@ def analyze_server_logs(service_name: str = "") -> str:
     )
 
 
-# --- STANDALONE SANITY TEST ---
+# --- SANITY TEST ---
 if __name__ == "__main__":
     print("=== TESTING INCIDENTPILOT TOOLS ===")
     print(analyze_server_logs.invoke({"service_name": "payment-gateway"}))
