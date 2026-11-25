@@ -113,6 +113,20 @@ def analyze_server_logs(service_name: str = "") -> str:
         f"- Breakdown of Error Messages: {top_errors}"
     )
 
+@tool
+def execute_recovery_action(action_name: str, target_service: str) -> str:
+    """
+    Executes a high-stakes infrastructure recovery action on a microservice.
+    CRITICAL: Only call this tool AFTER diagnosing the root cause and confirming the exact action from a runbook.
+    Args:
+        action_name: The exact recovery tool name from the runbook (e.g., 'restart_connection_pool' or 'flush_stale_cache').
+        target_service: The microservice to target (e.g., 'payment-gateway').
+    """
+    print(f"\n🚨 [ACTION EXECUTED] Running '{action_name}' on microservice '{target_service}'...")
+    # In a real enterprise system, this would trigger a Kubernetes API or AWS script.
+    return f"SUCCESS: Recovery action '{action_name}' completed on '{target_service}'. Service health restored."
+
+
 
 # --- SANITY TEST ---
 if __name__ == "__main__":
