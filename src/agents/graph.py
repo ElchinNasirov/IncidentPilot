@@ -20,7 +20,6 @@ from src.agents.tools import (
 class IncidentState(TypedDict):
     messages: Annotated[list, add_messages]
 
-
 # 2. SEPARATE DIAGNOSTIC TOOLS FROM HIGH-STAKES ACTION TOOLS
 diagnostic_tools = [analyze_server_logs, query_past_incidents, search_engineering_runbooks]
 action_tools = [execute_recovery_action]
@@ -40,7 +39,6 @@ Follow this strict investigation workflow when a user reports an outage:
 4. Finally, if a recovery action is required by the runbook, call `execute_recovery_action` with the exact action name and service.
 Always base your answers strictly on tool outputs. Never guess.
 """)
-
 
 # 4. DEFINE GRAPH NODES
 def agent_reasoning_node(state: IncidentState) -> dict:
@@ -66,11 +64,8 @@ def route_after_agent(state: IncidentState) -> str:
         return END
         
     # Check if the requested tool is our high-stakes recovery action
-    # requested_tool_name = last_message.tool_calls["name"]
-
     first_tool_call = next(iter(last_message.tool_calls))
     requested_tool_name = first_tool_call["name"]
-
 
 
     if requested_tool_name == "execute_recovery_action":
@@ -99,6 +94,7 @@ workflow.add_conditional_edges(
         END: END
     }
 )
+
 # Both tool nodes always loop back to the 'agent' node so the LLM can read the tool output!
 workflow.add_edge("diagnostic_tools", "agent")
 workflow.add_edge("action_tools", "agent")
@@ -116,6 +112,7 @@ incident_graph = workflow.compile(
 
 # --- STANDALONE INTERACTIVE TEST ---
 if __name__ == "__main__":
+    
     # A thread_id tracks this specific incident session inside MemorySaver
     config = {"configurable": {"thread_id": "incident-session-001"}}
     
@@ -131,7 +128,6 @@ if __name__ == "__main__":
     snapshot = incident_graph.get_state(config)
     if snapshot.next:
         print(f"\n⏸️  [HUMAN-IN-THE-LOOP PAUSE] Graph frozen before node: {snapshot.next}")
-        # pending_tool_call = snapshot.values["messages"][-1].tool_calls
         pending_tool_call = next(iter(snapshot.values["messages"][-1].tool_calls))
 
 
